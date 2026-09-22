@@ -506,7 +506,7 @@ PART 3: FASTAPI APPLICATION SETUP
 
         # Add your environment variables:
         DATABASE_URL=postgresql+psycopg://bloguser:your_secure_password@localhost/blog
-        SECRET_KEY=PASTE_THE_KEY
+        SECRET_KEY=QgDhlSeuwJrwyPOaEQ8qh9cgj60kF18F369oD8HYDIA
         MAIL_SERVER=smtp.yourprovider.com
         MAIL_PORT=587
         MAIL_USERNAME=your_email
