@@ -17,10 +17,10 @@
       "version": "3.12",
       "installTools": true,
       "toolsToInstall": "uv"
-    }
+    },
+    "ghcr.io/devcontainers/features/git-lfs:1": {}
   },
   "postCreateCommand": "uv sync",
-  "postStartCommand": "uv run alembic upgrade head && (nohup uv run fastapi dev --host 0.0.0.0 --port 8000 > /tmp/fastapi.log 2>&1 &)",
   "customizations": {
     "vscode": {
       "extensions": [
