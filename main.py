@@ -31,6 +31,11 @@ app = FastAPI(lifespan=lifespan)
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
+# template: 既要向用户提供页面，又要保留用于后端 API 的 JSON 接口。
+# # 因此，我们配置了 Jinja2 模板，向模板传递数据，利用 Jinja2 语法编写循环和条件判断，并通过 `layout.html` 实现了模板继承。
+
+# ()里的directory="templates"表示导入引用项目里的template文件夹
+# 有了这个templates，@app.get("..",response_class=HTMLResponse)里的response_class=HTMLResponse就不用写了
 templates = Jinja2Templates(directory="templates")
 
 app.include_router(users.router, prefix="/api/users", tags=["users"])
@@ -55,7 +60,7 @@ async def add_security_headers(request: Request, call_next):
 
     return response
 
-
+# get表示获取，("/health")表示路由
 @app.get("/health")
 async def health_check(db: Annotated[AsyncSession, Depends(get_db)]):
     try:
@@ -67,9 +72,16 @@ async def health_check(db: Annotated[AsyncSession, Depends(get_db)]):
         ) from exc
     return {"status": "healthy"}
 
-
+# FastAPI 默认会把路由自动加入 OpenAPI 文档
+# 但include_in_schema=False后，则不会放入文档
+# 这样可以使得文档更加简洁
+# name="home"路由名字
 @app.get("/", include_in_schema=False, name="home")
 @app.get("/posts", include_in_schema=False, name="posts")
+# ()中的Request是Jinja2要求的
+# 然后templates.TemplateResponse(request, "home.html",)
+# 表示移除了response_class=HTMLResponse，可以用上面这个代替了
+# templates.TemplateResponse第三个表示参数，是一个字典，里面存储着所有要用到页面中的变量
 async def home(request: Request, db: Annotated[AsyncSession, Depends(get_db)]):
     count_result = await db.execute(select(func.count()).select_from(models.Post))
     total = count_result.scalar() or 0
@@ -87,6 +99,8 @@ async def home(request: Request, db: Annotated[AsyncSession, Depends(get_db)]):
     return templates.TemplateResponse(
         request,
         "home.html",
+        # 字典里的键可以作为参数(或模板上下文)传递到template组件里面
+        # 即可以在组件/template里面直接用这些参数
         {
             "posts": posts,
             "title": "Home",
