@@ -29,10 +29,23 @@ async def lifespan(_app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 
+# T2:
+# 挂载静态文件目录, app.mount("/static", ...)
+# 表示：把 URL 路径 /static 交给一个专门的应用来处理。
+# 比如浏览器请求：/static/css/main.css
+# FastAPI 就会把这个请求交给后面的 StaticFiles。
+# 第一个参数url路径，第二个静态文件实例，指向文件夹里的静态文件
+# 可以在模板template里引用的名字
+# href="{{ url_for('static', path='icons/favicon.ico') }}"：动态生成 static/icons/favicon.ico 这个静态文件的 URL
+# url_for() 根据路由名称动态生成 URL
+# 'static' 对应 app.mount(..., name="static")
+# path 指定 static 目录下的具体文件
+# 最终生成 /static/icons/favicon.ico
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
+# T2:
 # template: 既要向用户提供页面，又要保留用于后端 API 的 JSON 接口。
-# # 因此，我们配置了 Jinja2 模板，向模板传递数据，利用 Jinja2 语法编写循环和条件判断，并通过 `layout.html` 实现了模板继承。
+# 因此，我们配置了 Jinja2 模板，向模板传递数据，利用 Jinja2 语法编写循环和条件判断，并通过 `layout.html` 实现了模板继承。
 
 # ()里的directory="templates"表示导入引用项目里的template文件夹
 # 有了这个templates，@app.get("..",response_class=HTMLResponse)里的response_class=HTMLResponse就不用写了
