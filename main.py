@@ -126,7 +126,8 @@ async def home(request: Request, db: Annotated[AsyncSession, Depends(get_db)]):
 @app.get("/posts/{post_id}", include_in_schema=False)
 async def post_page(
     request: Request,
-    post_id: int,
+    post_id: int, # T3: 自动捕获了上面/posts/{post_id}的参数
+    # post_id: int 表示把post_id限定为特定类型
     db: Annotated[AsyncSession, Depends(get_db)],
 ):
     result = await db.execute(
@@ -142,6 +143,11 @@ async def post_page(
             "post.html",
             {"post": post, "title": title},
         )
+    
+    # T3:raise HTTPException:
+    # 使得在请求失败时返回错误，而不是即使没有请求到也返回200状态码
+    # status_code=status.HTTP_404_NOT_FOUND直接返回404状态码
+    # detail: 在response里添加的message
     raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Post not found")
 
 
@@ -236,20 +242,27 @@ async def reset_password_page(request: Request):
     response.headers["Referrer-Policy"] = "no-referrer"
     return response
 
-
+# T3: 统一处理整个 FastAPI 应用中的 HTTP 异常，
+# 并根据请求是 API 还是普通网页，返回不同格式的错误结果。
+# @app.exception_handler(StarletteHTTPException)告诉 FastAPI：
+# “以后应用里出现 StarletteHTTPException，不要直接按照默认方式处理，交给我下面这个函数处理。”
 @app.exception_handler(StarletteHTTPException)
 async def general_http_exception_handler(
-    request: Request,
-    exception: StarletteHTTPException,
-):
+    request: Request, # request: Request 表示请求对象，包含了请求的所有信息，比如 URL、方法、头信息等
+    exception: StarletteHTTPException, 
+):  
+    # 请求的 URL 路径以 /api 开头，说明是 API 请求
     if request.url.path.startswith("/api"):
+        # 返回 JSON 格式的错误响应，包含状态码和错误详情
         return await http_exception_handler(request, exception)
 
-    message = (
+    # 若不是api请求, 则返回 HTML 格式的错误页面
+    message = ( # 决定HTML 错误页面上到底显示什么文字。它使用 Python 的 or
         exception.detail
+        # 如果 exception.detail 是空的，那么使用默认信息：
         or "An error occurred. Please check your request and try again."
     )
-
+    # 返回一个 HTML 错误页面，使用 Jinja2 模板渲染 error.html，并传递状态码、标题和错误信息
     return templates.TemplateResponse(
         request,
         "error.html",
@@ -258,10 +271,13 @@ async def general_http_exception_handler(
             "title": exception.status_code,
             "message": message,
         },
+        # 防止即使错误发生了，浏览器仍然显示 200 OK 的状态码，而是返回实际的错误状态码
         status_code=exception.status_code,
     )
+# 这是这节课很重要的一个设计思想：同一套数据源，同时服务 API 客户端和浏览器
 
-
+# T3: 处理请求验证错误的异常处理器
+# 因为验证请求不是HTTP异常，而是请求验证错误，所以需要单独处理
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(
     request: Request,
