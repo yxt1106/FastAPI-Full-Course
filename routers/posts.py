@@ -13,7 +13,9 @@ from schemas import PaginatedPostsResponse, PostCreate, PostResponse, PostUpdate
 
 router = APIRouter()
 
-
+# T4: response_model:开始修改 FastAPI 路由。例如：
+# @app.get("/api/posts", response_model=list[PostResponse])
+# 这说明返回的数据必须符合 list[PostResponse]
 @router.get("", response_model=PaginatedPostsResponse)
 async def get_posts(
     db: Annotated[AsyncSession, Depends(get_db)],
