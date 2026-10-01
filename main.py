@@ -41,6 +41,10 @@ app = FastAPI(lifespan=lifespan)
 # 'static' 对应 app.mount(..., name="static")
 # path 指定 static 目录下的具体文件
 # 最终生成 /static/icons/favicon.ico
+# 这行代码表示把你项目本地的 static 文件夹，挂载成网站可以直接访问的静态文件目录
+# StaticFiles(directory="static") 表示把本地的 static 文件夹作为静态文件目录
+# 静态文件实际存在于当前项目的 static 文件夹。
+# name= ... 主要是给这个挂载点起一个名字，方便在 FastAPI / Starlette 的 URL 路由系统中引用。
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
 # T2:
@@ -93,9 +97,8 @@ async def health_check(db: Annotated[AsyncSession, Depends(get_db)]):
 @app.get("/", include_in_schema=False, name="home")
 @app.get("/posts", include_in_schema=False, name="posts")
 # ()中的Request是Jinja2要求的
-# 然后templates.TemplateResponse(request, "home.html",)
-# 表示移除了response_class=HTMLResponse，可以用上面这个代替了
-# templates.TemplateResponse第三个表示参数，是一个字典，里面存储着所有要用到页面中的变量
+# db: Annotated[AsyncSession, Depends(get_db)]表示依赖注入，获取数据库会话
+# db告诉API，在运行这个函数之前调用get_db函数然后传递结果作为db的参数
 async def home(request: Request, db: Annotated[AsyncSession, Depends(get_db)]):
     count_result = await db.execute(select(func.count()).select_from(models.Post))
     total = count_result.scalar() or 0
@@ -110,6 +113,10 @@ async def home(request: Request, db: Annotated[AsyncSession, Depends(get_db)]):
 
     has_more = len(posts) < total
 
+    # 然后templates.TemplateResponse(request, "home.html",)
+    # 表示移除了response_class=HTMLResponse，可以用上面这个代替了
+    # templates.TemplateResponse第三个表示参数，
+    # 是一个字典，里面存储着所有要用到页面中的变量
     return templates.TemplateResponse(
         request,
         "home.html",
@@ -159,8 +166,8 @@ async def user_posts_page(
     db: Annotated[AsyncSession, Depends(get_db)],
 ):
     result = await db.execute(select(models.User).where(models.User.id == user_id))
-    user = result.scalars().first()
-    if not user:
+    user = result.scalars().first() # 获取第一个用户对象如果没有就为none
+    if not user:# 返回空表有两种情况，用户不存在或没发帖，所以要先判断不存在情况
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="User not found",

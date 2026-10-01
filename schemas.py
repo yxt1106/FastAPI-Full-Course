@@ -11,14 +11,32 @@ from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
 class UserBase(BaseModel):
     username: str = Field(min_length=1, max_length=50)
-    email: EmailStr = Field(max_length=120)
+    email: EmailStr = Field(max_length=120) # EmailStr默认不会为空
 
-
+# 注册用户时的数据
 class UserCreate(UserBase):
     password: str = Field(min_length=8)
 
-
+# 公开返回给客户端的用户信息
 class UserPublic(BaseModel):
+    # ConfigDict(from_attributes=True): 允许从SQLAlchemy模型实例中获取数据，而不仅仅是从字典中获取数据
+    # from_attributes=True： pyantic可以从SQLAlchemy模型实例中获取数据，而不仅仅是从字典中获取数据
+    
+    # 举个例子。
+    # SQLAlchemy：user = User(id=1, username="Tom",image_file="abc.jpg")
+    # 这是一个：SQLAlchemy User 对象, 但 FastAPI 的响应模型是：
+    # UserPublic了from_attributes=True
+
+    # 就可以把：
+    # SQLAlchemy User
+    #         ↓
+    # Pydantic UserPublic
+    # 转换过去。
+
+    # 大概相当于：user.id, user.username, user.image_file, user.image_path
+
+    # 分别填进：UserPublic.id,UserPublic.username,UserPublic.image_file
+    # UserPublic.image_path
     model_config = ConfigDict(from_attributes=True)
 
     id: int
