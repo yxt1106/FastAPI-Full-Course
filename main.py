@@ -22,6 +22,7 @@ from routers import posts, users
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
+    # yield之前的代码在开始时运行
     yield
     # Shutdown
     await engine.dispose()
@@ -137,7 +138,7 @@ async def post_page(
     post_id: int, # T3: 自动捕获了上面/posts/{post_id}的参数
     # post_id: int 表示把post_id限定为特定类型
     db: Annotated[AsyncSession, Depends(get_db)],
-):
+):  # Eager Loading↓
     result = await db.execute(
         select(models.Post)
         .options(selectinload(models.Post.author))
