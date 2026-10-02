@@ -353,7 +353,10 @@ async def update_user(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Email already registered",
             )
-
+    # 逐个检查，使得更新能局部化而不是每次都更新全部
+    # 不用 setattr()：特殊业务逻辑:
+    # 否则传进来的：ABC@GMAIL.COM就还是：ABC@GMAIL.COM而不会自动 .lower()。
+    # 写法的优点是：每个字段都可以单独加入自己的业务逻辑
     if user_update.username is not None:
         user.username = user_update.username
     if user_update.email is not None:
@@ -364,13 +367,16 @@ async def update_user(
     return user
 
 
+# 只能删除自己的账号 → 查数据库 → 用户不存在返回 404 
+# → 记录头像文件名 → 删除数据库用户 → 提交事务 → 删除服务器上的头像文件
+# user_id来自 URL。比如：DELETE /users/5 那么：user_id == 5
 @router.delete("/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_user(
     user_id: int,
     current_user: CurrentUser,
     db: Annotated[AsyncSession, Depends(get_db)],
 ):
-    if user_id != current_user.id:
+    if user_id != current_user.id: # 检查用户是否在删除自己账号，此为删除他人账号情况
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Not authorized to delete this user",

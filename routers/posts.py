@@ -77,9 +77,13 @@ async def get_post(post_id: int, db: Annotated[AsyncSession, Depends(get_db)]):
     post = result.scalars().first()
     if post:
         return post
-    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Post not found")
+    raise HTTPException(status_code=status.HTTPa_404_NOT_FOUND, detail="Post not found")
 
 
+# “登录用户修改自己的一篇文章：
+# 先通过 ID 找到文章，如果文章不存在返回 404，
+# 如果不是自己的返回 403，然后用新数据完整替换标题和内容，
+# 提交数据库，最后返回更新后的文章。”
 @router.put("/{post_id}", response_model=PostResponse)
 async def update_post_full(
     post_id: int,
@@ -88,23 +92,36 @@ async def update_post_full(
     db: Annotated[AsyncSession, Depends(get_db)],
 ):
     result = await db.execute(select(models.Post).where(models.Post.id == post_id))
-    post = result.scalars().first()
-    if not post:
+    post = result.scalars().first() # 查询结果变成 Post 对象
+    # 例如数据库：
+    # id   title       content
+    # 5    FastAPI     Hello
+
+    # 查询之后：
+    # post.id       # 5
+    # post.title    # "FastAPI"
+    # post.content  # "Hello"
+    if not post: # 判断文章是否存在
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Post not found",
         )
 
+    # 检查当前用户是不是文章作者
+    # 假设数据库中的文章: post.user_id = 3
+    # 当前登录用户：current_user.id = 10
     if post.user_id != current_user.id:
         raise HTTPException(
+            # 你登录了，但是你没有权限修改这篇文章。
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Not authorized to update this post",
         )
-
+    # 通过了前面的两个检查之后：
     post.title = post_data.title
     post.content = post_data.content
 
-    await db.commit()
+    await db.commit() # 真正保存到数据库
+    # 让 SQLAlchemy 根据数据库中的最新状态重新同步这个 post 对象
     await db.refresh(post, attribute_names=["author"])
     return post
 
@@ -130,9 +147,12 @@ async def update_post_partial(
             detail="Not authorized to update this post",
         )
 
+    # 只保留用户这次请求中真正提供的字段，避免误修改其他没有修改的字段
+    # unset 可以简单理解为：这个字段这次请求根本没有设置。
+    # exclude_unset为排除掉这次没有设置的字段
     update_data = post_data.model_dump(exclude_unset=True)
     for field, value in update_data.items():
-        setattr(post, field, value)
+        setattr(post, field, value) # field是字段，value是设置的值
 
     await db.commit()
     await db.refresh(post, attribute_names=["author"])
