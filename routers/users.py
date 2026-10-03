@@ -53,7 +53,7 @@ router = APIRouter()
 
 
 @router.post(
-    "",
+    "", # router里的路径是相对路径
     response_model=UserPrivate,
     status_code=status.HTTP_201_CREATED,
 )

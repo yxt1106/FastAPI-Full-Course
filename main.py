@@ -17,7 +17,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 import models
 from config import settings
 from database import engine, get_db
-from routers import posts, users
+from routers import posts, users # T7：把api封装到routers文件夹后，进行import到main.py文件夹中
 
 
 @asynccontextmanager
@@ -56,6 +56,18 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 # 有了这个templates，@app.get("..",response_class=HTMLResponse)里的response_class=HTMLResponse就不用写了
 templates = Jinja2Templates(directory="templates")
 
+# T8: 配置路由，routers源文件里路径没有写"/api/..."，因为这里prefix进行配置了
+# 这里配置后，router被连接到app来了。prefix添加了url的前缀，因此router文件里无需再配置
+# 主要用于 FastAPI 自动生成的 Swagger/OpenAPI 文档。
+# 比如你打开：/docs，可能看到：
+# Users
+#     GET    /api/users/
+#     GET    /api/users/{user_id}
+#     POST   /api/users/
+#     DELETE /api/users/{user_id}
+
+# 这些接口会被归类到users这一组下面。
+# 所以：tags=["users"]主要是为了让 API 文档更有组织性，并不会改变 URL。
 app.include_router(users.router, prefix="/api/users", tags=["users"])
 app.include_router(posts.router, prefix="/api/posts", tags=["posts"])
 
