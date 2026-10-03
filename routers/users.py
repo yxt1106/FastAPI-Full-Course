@@ -71,6 +71,7 @@ async def create_user(user: UserCreate, db: Annotated[AsyncSession, Depends(get_
         )
 
     result = await db.execute(
+        # 都用小写：让用户名 / 邮箱的查询不区分大小写，避免因为大小写不同导致“明明是同一个账号却查不到”
         select(models.User).where(func.lower(models.User.email) == user.email.lower()),
     )
     existing_email = result.scalars().first()
@@ -93,10 +94,13 @@ async def create_user(user: UserCreate, db: Annotated[AsyncSession, Depends(get_
 
 @router.post("/token", response_model=Token)
 async def login_for_access_token(
+    # OAuth2PasswordRequestForm 是 FastAPI 提供的 OAuth2 登录表单模型，
+    # 里面主要有: username, password
+    # 用 Depends(): 因为 FastAPI 会自动帮你创建这个表单对象并注入进来，你不用自己解析请求
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
     db: Annotated[AsyncSession, Depends(get_db)],
 ):
-    # Look up user by email (case-insensitive)
+    # Look up user by email (case-insensitive)通过邮箱查找用户
     # Note: OAuth2PasswordRequestForm uses "username" field, but we treat it as email
     result = await db.execute(
         select(models.User).where(

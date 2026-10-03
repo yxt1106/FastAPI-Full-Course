@@ -17,7 +17,7 @@ class UserBase(BaseModel):
 class UserCreate(UserBase):
     password: str = Field(min_length=8)
 
-# 公开返回给客户端的用户信息
+# 公开返回给客户端的用户信息: 比如用户发的贴子
 class UserPublic(BaseModel):
     # ConfigDict(from_attributes=True): 允许从SQLAlchemy模型实例中获取数据，而不仅仅是从字典中获取数据
     # from_attributes=True： pyantic可以从SQLAlchemy模型实例中获取数据，而不仅仅是从字典中获取数据
@@ -46,7 +46,7 @@ class UserPublic(BaseModel):
 
 
 class UserPrivate(UserPublic):
-    email: EmailStr
+    email: EmailStr # 邮箱格式
 
 
 class UserUpdate(BaseModel):

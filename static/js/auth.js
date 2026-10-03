@@ -1,13 +1,15 @@
 let currentUser = null;
 let fetchPromise = null;
-
+// T10
 export async function getCurrentUser() {
-  if (currentUser) {
+  if (currentUser) {// 如果有cached用户，立即返回
     return currentUser;
   }
 
   // Return in-progress fetch to prevent duplicate API calls
   if (fetchPromise) {
+    //因为页面的多个部分会同时调用getcurrentUser
+    //而不要对重复多个请求调用api
     return fetchPromise;
   }
 
@@ -16,6 +18,8 @@ export async function getCurrentUser() {
     return null;
   }
 
+  //用fetch而不用解码是因为：
+  //只能得到 token 里存的内容，不能直接得到完整的用户资料
   fetchPromise = (async () => {
     try {
       const response = await fetch("/api/users/me", {
@@ -28,7 +32,7 @@ export async function getCurrentUser() {
         currentUser = await response.json();
         return currentUser;
       }
-
+      //如果token不可用或者过期则清除
       localStorage.removeItem("access_token");
       return null;
     } catch (error) {
@@ -43,6 +47,7 @@ export async function getCurrentUser() {
 }
 
 export function logout() {
+  //退出登录逻辑: 清理token并返回首页
   localStorage.removeItem("access_token");
   currentUser = null;
   window.location.href = "/";

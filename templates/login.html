@@ -42,7 +42,7 @@
           // OAuth2PasswordRequestForm expects form data, not JSON
           const response = await fetch('/api/users/token', {
             method: 'POST',
-            body: formData,
+            body: formData, // Oauth2希望前端传来表单编码的数据
           });
 
           if (response.ok) {
