@@ -97,11 +97,30 @@ class PostResponse(PostBase):
 
 class PaginatedPostsResponse(BaseModel):
     posts: list[PostResponse]
-    total: int
-    skip: int
+    total: int # 数据库里所有帖子数量
+    skip: int # 
     limit: int
-    has_more: bool
+    has_more: bool # 在这一批后是否有更多帖子
+    # skip = 跳过多少条数据
+    # limit = 最多取多少条数据
+    # 如果你把 skip/limit 理解成“书签位置 + 每次拿几页”，就很好记：
+    # skip 是你已经翻过去的数量，limit 是这次再看多少。
+    
+    # 例如数据库里有：
+    # 1  2  3  4  5  6  7  8  9  10
+    # 11 12 13 14 15 16 17 18 19 20
 
+    # 假设：skip = 5, limit = 10
+    # 意思就是：
+    # 先跳过 5 条
+    # ↓
+    # 1  2  3  4  5   ← 跳过
+
+    # 然后取 10 条
+    # ↓
+    # 6  7  8  9  10  11  12  13  14  15
+
+    # 所以最终返回：6 ~ 15
 
 class ForgotPasswordRequest(BaseModel):
     email: EmailStr = Field(max_length=120)

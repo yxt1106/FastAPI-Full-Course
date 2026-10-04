@@ -121,7 +121,7 @@ async def home(request: Request, db: Annotated[AsyncSession, Depends(get_db)]):
         .options(selectinload(models.Post.author))
         .order_by(models.Post.date_posted.desc())
         .limit(settings.posts_per_page),
-    )
+    )# offset: 跳过前面的 skip 条数据
     posts = result.scalars().all()
 
     has_more = len(posts) < total
