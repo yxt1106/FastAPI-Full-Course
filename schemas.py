@@ -69,7 +69,12 @@ class PostBase(BaseModel):
 
 
 class PostCreate(PostBase): # 表示继承于 PostBase 类，表示创建帖子时需要提供的字段。
-    pass # pass： 表示占位符，表示该类没有额外的字段或方法。相当于一个空类，继承了 PostBase 的所有字段和验证规则。
+    # 不用user_id:int: 因为 user_id 不再由前端提交，
+    # 而是由后端根据当前登录用户 current_user.id 自动确定。
+    # 这样客户端没办法宣称自己是其他人了
+    pass 
+    # pass： 表示占位符，表示该类没有额外的字段或方法。
+    # 相当于一个空类，继承了 PostBase 的所有字段和验证规则。
 
 
 class PostUpdate(BaseModel):

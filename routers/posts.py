@@ -53,7 +53,7 @@ async def get_posts(
 )
 async def create_post(
     post: PostCreate,
-    current_user: CurrentUser,
+    current_user: CurrentUser, # 添加这个，现在路由被保护了
     db: Annotated[AsyncSession, Depends(get_db)],
 ):
     new_post = models.Post(

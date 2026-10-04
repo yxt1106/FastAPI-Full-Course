@@ -76,7 +76,7 @@ async def get_current_user(
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> models.User:
     user_id = verify_access_token(token)# 通过token获取用户id
-    if user_id is None:
+    if user_id is None: # token为None，意味着过期或者不通过
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid or expired token",
@@ -92,11 +92,11 @@ async def get_current_user(
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    result = await db.execute(
+    result = await db.execute(# 查询数据库得到真实的用户对象
         select(models.User).where(models.User.id == user_id_int),
     )
     user = result.scalars().first()
-    if not user:
+    if not user:# 如果用户不存在
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="User not found",
@@ -105,4 +105,7 @@ async def get_current_user(
     return user
 # javascript可以解码token，但不能验证鉴别
 
+# 当前的用户是一个用户对象(models.User)
+# Depends(get_current_user)表示该用户的媒体数据
+# “请 FastAPI 自动验证 token，并把当前数据库里的 User 对象给我。”
 CurrentUser = Annotated[models.User, Depends(get_current_user)]
