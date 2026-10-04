@@ -365,6 +365,8 @@ async def update_user(
         user.username = user_update.username
     if user_update.email is not None:
         user.email = user_update.email.lower()
+    # 这里去掉头像鉴别，使得用户只能修改用户名和邮箱
+    # 因为头像是一个上传文件而不是字符
 
     await db.commit()
     await db.refresh(user)
@@ -399,7 +401,7 @@ async def delete_user(
     await db.delete(user)
     await db.commit()
 
-    if old_filename:
+    if old_filename: # 如果有
         await delete_profile_image(old_filename)
 
 
@@ -418,6 +420,7 @@ async def upload_profile_picture(
 
     content = await file.read()
 
+    # 检查文件大小,content.size在读取文件时不总是可靠
     if len(content) > settings.max_upload_size_bytes:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -425,6 +428,26 @@ async def upload_profile_picture(
         )
 
     try:
+        # await run_in_threadpool原因在于：
+        # 图片处理通常属于 CPU-bound / blocking work，可能阻塞 FastAPI 的异步事件循环。
+        # 例如图片处理需要：Pillow 解码, resize,crop, encode JPEG
+
+        # 假如直接在 async event loop 里面执行：process_profile_image(...)
+        # 处理 2 秒。
+        # 那么这个 worker 在这 2 秒里可能无法很好地继续处理其他异步请求。
+        # 使用：run_in_threadpool(...)
+        # 相当于：
+        # FastAPI Async Event Loop
+        #         │
+        #         │ 把图片处理任务交出去
+        #         ▼
+        #     Thread Pool
+        #         │
+        #         ▼
+        # process_profile_image()
+
+        # 这样主异步事件循环不会被这个同步/CPU 密集任务直接卡住
+        # 并且更好处理并且得到更加正确的文件名
         processed_bytes, new_filename = await run_in_threadpool(
             process_profile_image,
             content,
@@ -455,14 +478,14 @@ async def upload_profile_picture(
 
     return current_user
 
-
+# 把update_user()里的修改头像移动到这
 @router.delete("/{user_id}/picture", response_model=UserPrivate)
 async def delete_user_picture(
     user_id: int,
     current_user: CurrentUser,
     db: Annotated[AsyncSession, Depends(get_db)],
 ):
-    if current_user.id != user_id:
+    if current_user.id != user_id:# 检查身份
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Not authorized to delete this user's picture",
@@ -470,12 +493,13 @@ async def delete_user_picture(
 
     old_filename = current_user.image_file
 
-    if old_filename is None:
+    if old_filename is None: # 是否有头像，如果没有则返回报错
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="No profile picture to delete",
         )
 
+    # 删除头像后，更新数据库
     current_user.image_file = None
     await db.commit()
     await db.refresh(current_user)

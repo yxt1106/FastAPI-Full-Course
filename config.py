@@ -24,6 +24,7 @@ class Settings(BaseSettings):
     s3_secret_access_key: SecretStr | None = None
     s3_endpoint_url: str | None = None
 
+    # 设置最大的文件大小,可以保护服务器免于大文件上传
     max_upload_size_bytes: int = 5 * 1024 * 1024
 
     posts_per_page: int = 10

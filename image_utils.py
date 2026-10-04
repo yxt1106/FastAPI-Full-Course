@@ -34,7 +34,7 @@ def process_profile_image(content: bytes) -> tuple[bytes, str]:
 
         if img.mode in ("RGBA", "LA", "P"):
             img = img.convert("RGB")
-
+        # T12: 创建图片名,并且名字是独一无二的
         filename = f"{uuid.uuid4().hex}.jpg"
 
         output = BytesIO()
@@ -67,5 +67,5 @@ async def upload_profile_image(file_bytes: bytes, filename: str) -> None:
 async def delete_profile_image(filename: str | None) -> None:
     if filename is None:
         return
-    key = f"profile_pics/{filename}"
+    key = f"profile_pics/{filename}"# 创建全路径并且删除已存在的路径
     await run_in_threadpool(_delete_from_s3, key)
