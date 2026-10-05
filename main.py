@@ -30,6 +30,8 @@ async def lifespan(_app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 
+# 选PostgreSQL是因为是业界标准web应用
+
 # T2:
 # 挂载静态文件目录, app.mount("/static", ...)
 # 表示：把 URL 路径 /static 交给一个专门的应用来处理。

@@ -9,7 +9,7 @@ class Settings(BaseSettings):
         env_file_encoding="utf-8",
     )
 
-    database_url: str
+    database_url: str # 从.env文件里读取url,并把读取的值填充在此
     # 当创建env文件时，里面会有个环境变量叫做SECRET KEY，并将匹配这里的设置
     # 如果key不在环境变量里设置，将使用env文件中的值
     # 如果环境变量和env都没有，将从这里config的默认值获取  
