@@ -1,7 +1,7 @@
 from email.message import EmailMessage
 
-import aiosmtplib
-from fastapi.templating import Jinja2Templates
+import aiosmtplib # 发送邮件
+from fastapi.templating import Jinja2Templates # Jinja2模板为html邮件
 
 from config import settings
 
@@ -24,7 +24,7 @@ async def send_email(
     if html_content:
         message.add_alternative(html_content, subtype="html")
 
-    await aiosmtplib.send(
+    await aiosmtplib.send( # 参数
         message,
         hostname=settings.mail_server,
         port=settings.mail_port,
@@ -33,10 +33,11 @@ async def send_email(
         start_tls=settings.mail_use_tls,
     )
 
-
+# 密码重置邮件业务逻辑
 async def send_password_reset_email(to_email: str, username: str, token: str) -> None:
+    # 将前端url和token拼接生成密码重置链接
     reset_url = f"{settings.frontend_url}/reset-password?token={token}"
-
+    # html模板渲染
     template = templates.env.get_template("email/password_reset.html")
     html_content = template.render(reset_url=reset_url, username=username)
 
@@ -55,8 +56,8 @@ The FastAPI Blog Team
 """
 
     await send_email(
-        to_email=to_email,
-        subject="Reset Your Password - FastAPI Blog",
-        plain_text=plain_text,
+        to_email=to_email,# 发送的邮件地址
+        subject="Reset Your Password - FastAPI Blog",# 邮件标题
+        plain_text=plain_text, # 邮件内容
         html_content=html_content,
     )

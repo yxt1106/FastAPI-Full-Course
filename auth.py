@@ -35,6 +35,9 @@ def generate_reset_token() -> str:
 
 
 def hash_reset_token(token: str) -> str:
+    # sha256: 因为密码通常脆弱且可预测，
+    # 因此我们需要一种慢速哈希算法，以使暴力破解攻击变得不可行。
+    # 而token是随机的，使得暴力破解不可行
     return hashlib.sha256(token.encode()).hexdigest()
 
 # 创建可执行的token

@@ -36,8 +36,9 @@ class Settings(BaseSettings):
     mail_username: str = ""
     mail_password: SecretStr = SecretStr("")
     mail_from: str = "noreply@example.com"
-    mail_use_tls: bool = True
-
+    mail_use_tls: bool = True # 是否用tls作为加密
+    # 建立url重设时的基础url，不用request因为request会被网络攻击
+    
     frontend_url: str = "http://localhost:8000"
 
 # 从env文件中加载，因为Settings类有：

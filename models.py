@@ -37,7 +37,7 @@ class User(Base):
 
     reset_tokens: Mapped[list[PasswordResetToken]] = relationship(
         back_populates="user",
-        cascade="all, delete-orphan",
+        cascade="all, delete-orphan", # 当用户删除时，reset token一起删除
     )
 
     @property

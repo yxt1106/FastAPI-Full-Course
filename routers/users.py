@@ -131,7 +131,7 @@ async def login_for_access_token(
 async def get_current_user(current_user: CurrentUser):
     return current_user
 
-
+# 202: 已经接受请求并处理它，但不确保邮件是否存在
 @router.post("/forgot-password", status_code=status.HTTP_202_ACCEPTED)
 async def forgot_password(
     request_data: ForgotPasswordRequest,
@@ -140,6 +140,7 @@ async def forgot_password(
 ):
     result = await db.execute(
         select(models.User).where(
+            # 如果用户存在
             func.lower(models.User.email) == request_data.email.lower(),
         ),
     )
@@ -151,7 +152,7 @@ async def forgot_password(
                 models.PasswordResetToken.user_id == user.id,
             ),
         )
-
+        # 生成token以及过期时间
         token = generate_reset_token()
         token_hash = hash_reset_token(token)
         expires_at = datetime.now(UTC) + timedelta(
@@ -165,17 +166,19 @@ async def forgot_password(
         )
         db.add(reset_token)
         await db.commit()
-
+        # 安排要发送的邮件
+        # background_taks在回复发送后运行,然后session关闭
         background_tasks.add_task(
-            send_password_reset_email,
+            send_password_reset_email,# 任务
             to_email=user.email,
             username=user.username,
-            token=token,
+            token=token, # unhashed token给邮件
+            # 用户需要原始token来完成密码重置，但是hash版本存在数据库
         )
 
-    return {
+    return {# 这里不会说邮箱是否存在，
         "message": "If an account exists with this email, you will receive password reset instructions.",
-    }
+    } # 这可以让攻击者无法知道邮件通过不同回复知道邮箱是否存在在
 
 
 @router.post("/reset-password", status_code=status.HTTP_200_OK)
@@ -190,7 +193,7 @@ async def reset_password(
             models.PasswordResetToken.token_hash == token_hash,
         ),
     )
-    reset_token = result.scalars().first()
+    reset_token = result.scalars().first() # 获得reset token
 
     if not reset_token:
         raise HTTPException(
@@ -205,7 +208,7 @@ async def reset_password(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid or expired reset token",
         )
-
+    # 查找用户是否存在，否则报错
     result = await db.execute(
         select(models.User).where(models.User.id == reset_token.user_id),
     )
@@ -216,25 +219,28 @@ async def reset_password(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid or expired reset token",
         )
-
+    # 用户新密码的hash形式
     user.password_hash = hash_password(request_data.new_password)
 
-    await db.execute(
+    await db.execute(# 删除重置token
         sql_delete(models.PasswordResetToken).where(
             models.PasswordResetToken.user_id == user.id,
         ),
     )
 
     await db.commit()
+
+    # 这里没有设置密码重置后让用户重新登陆?(可以防止一些安全隐患问GPT)
+
     return {
         "message": "Password reset successfully. You can now log in with your new password.",
     }
 
-
+# 已登录用户修改密码(/me意味着不再需要单独认证检查)
 @router.patch("/me/password", status_code=status.HTTP_200_OK)
 async def change_password(
     password_data: ChangePasswordRequest,
-    current_user: CurrentUser,
+    current_user: CurrentUser, # 这意味着用户必须登录
     db: Annotated[AsyncSession, Depends(get_db)],
 ):
     if not verify_password(password_data.current_password, current_user.password_hash):
@@ -242,7 +248,7 @@ async def change_password(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Current password is incorrect",
         )
-
+    # 如果正确，更新password hash
     current_user.password_hash = hash_password(password_data.new_password)
 
     await db.execute(

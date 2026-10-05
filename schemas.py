@@ -122,6 +122,7 @@ class PaginatedPostsResponse(BaseModel):
 
     # 所以最终返回：6 ~ 15
 
+# 
 class ForgotPasswordRequest(BaseModel):
     email: EmailStr = Field(max_length=120)
 
@@ -130,7 +131,7 @@ class ResetPasswordRequest(BaseModel):
     token: str
     new_password: str = Field(min_length=8)
 
-
+# 已登录用户想修改密码
 class ChangePasswordRequest(BaseModel):
     current_password: str
     new_password: str = Field(min_length=8)
