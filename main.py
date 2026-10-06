@@ -94,16 +94,17 @@ async def add_security_headers(request: Request, call_next):
     return response
 
 # get表示获取，("/health")表示路由
+# 获取数据库
 @app.get("/health")
 async def health_check(db: Annotated[AsyncSession, Depends(get_db)]):
     try:
-        await db.execute(text("SELECT 1"))
+        await db.execute(text("SELECT 1")) # 检查数据库能否查到(但不会看内容)
     except Exception as exc:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="Database unavailable",
         ) from exc
-    return {"status": "healthy"}
+    return {"status": "healthy"} # 如果能触及,则返回健康状态]
 
 # FastAPI 默认会把路由自动加入 OpenAPI 文档
 # 但include_in_schema=False后，则不会放入文档
