@@ -74,24 +74,34 @@ app.include_router(users.router, prefix="/api/users", tags=["users"])
 app.include_router(posts.router, prefix="/api/posts", tags=["posts"])
 
 
-
-@app.middleware("http")
+#T19: 中间件:处理一些事情在请求前或者后或者前后都有
+@app.middleware("http")# 自己添加header
 async def add_security_headers(request: Request, call_next):
-    response = await call_next(request)
+    # call_next: 给需要处理的路由传递请求
+    response = await call_next(request)# 先让请求正常走
 
+    # 接受响应并且在回到客户端前给响应添加头
     response.headers["X-Frame-Options"] = "SAMEORIGIN"
-
+    # 告诉浏览器信任我们发送的内容的头,并且不要去猜内容的类型
     response.headers["X-Content-Type-Options"] = "nosniff"
 
     if "Referrer-Policy" not in response.headers:
         response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
 
     if request.url.hostname not in ("localhost", "127.0.0.1"):
+        # Strict-Transport-Security: 告诉浏览器当访问链接时必须用https
         response.headers["Strict-Transport-Security"] = (
             "max-age=63072000; includeSubDomains"
         )
 
-    return response
+    return response # 返回已经添加头的响应
+# Dockerfile：一份指导 Docker 如何构建容器镜像的“配方”。
+# Image: 配方的建立的结果(Image 是“做好的软件包”)
+# Container: Image的运行实例
+# 当我们的app打包成Image, 相同的Image在笔记本上运行
+# 可运行在Cloud或Kubernetes
+# 构建分为两阶段: 一个构建阶段安装依赖和一个从零开始、仅复制必要内容的生产阶段
+
 
 # get表示获取，("/health")表示路由
 # 获取数据库
