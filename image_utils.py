@@ -63,7 +63,8 @@ async def upload_profile_image(file_bytes: bytes, filename: str) -> None:
     key = f"profile_pics/{filename}"
     await run_in_threadpool(_upload_to_s3, file_bytes, key)
 
-
+# 删除头像是异步的，之前的是同步的因为当时只是删除本地文件
+# 而现在是调用S3的API,所以需要await
 async def delete_profile_image(filename: str | None) -> None:
     if filename is None:
         return
